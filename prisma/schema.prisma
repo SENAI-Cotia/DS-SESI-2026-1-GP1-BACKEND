@@ -4,10 +4,78 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
+}
+
+model Produto {
+  id_produto    Int      @id @default(autoincrement())
+  preco         Float   
+  nome          String
+  marca         String
+  descricao     String?
+  codigo_barras String   @unique
+
+  estoques      Estoque[]
+  movimentacoes Movimentacao[]
+
+  @@map("produtos")
+}
+
+model Estoque {
+  id_estoque Int @id @default(autoincrement())
+  id_produto Int
+  id_filial  Int
+  quantidade Int @default(0)
+
+  produto Produto @relation(fields: [id_produto], references: [id_produto])
+
+  @@map("estoque")
+}
+
+model Movimentacao {
+  id_movimentacao Int      @id @default(autoincrement())
+  id_filial       Int
+  id_produto      Int
+  quantidade      Int
+  data            DateTime @default(now())
+  tipo            String 
+
+  produto Produto @relation(fields: [id_produto], references: [id_produto])
+
+  id_administrador Int?
+  administrador    Administrador? @relation(fields: [id_administrador], references: [id_usuario])
+
+  id_gerente Int?
+  gerente    Gerente? @relation(fields: [id_gerente], references: [id_usuario])
+
+  @@map("movimentacoes")
+}
+
+model Administrador {
+  id_usuario Int    @id @default(autoincrement())
+  id_filial  Int
+  email      String @unique
+  senha      String
+  nome       String
+
+  movimentacoes Movimentacao[]
+
+  @@map("administradores")
+}
+
+model Gerente {
+  id_usuario Int    @id @default(autoincrement())
+  id_filial  Int
+  email      String @unique
+  senha      String
+  nome       String
+
+  movimentacoes Movimentacao[]
+
+  @@map("gerentes")
 }
