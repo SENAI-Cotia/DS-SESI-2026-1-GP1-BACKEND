@@ -14,7 +14,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/SENAI-Cotia/DS-SESI-2026-1-GP1-BACKEND/issues"
   },
