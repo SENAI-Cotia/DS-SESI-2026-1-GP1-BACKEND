@@ -1,11 +1,7 @@
 
 import express from "express";
-import { error } from "node:console";
-import { json } from "node:stream/consumers";
-0,
 
 
-,0
 const app = express();
 const { prisma } = require("./lib/prisma.ts");
 
@@ -78,10 +74,6 @@ app.post("/gerentes", async (req, res) => {
 
     res.status(201).json(cadastro)
 })
-
-//AUTALIZAÇÂO DE DADOS 
-app.put("/gerentes")
-
 
 
 
