@@ -1,9 +1,9 @@
 
 import express from "express";
-
+import prisma from "./lib/prisma";
 
 const app = express();
-const { prisma } = require("./lib/prisma.ts");
+
 
 app.use(express.json());
 
@@ -52,11 +52,11 @@ app.post("/cadastro/produtos", async (req, res) =>{
 
 //CADASTRO DE GERENTES
 app.post("/gerentes", async (req, res) => {
-    const {nome, email, senha, id_filial} = req.body
+    const {nome, email, senha} = req.body
 
     
 
-    if(!nome || !email || !senha|| !id_filial){
+    if(!nome || !email || !senha){
         return res.status(400).json({error: "Todos os campos são obrigatórios!"})
     }
 
@@ -68,13 +68,37 @@ app.post("/gerentes", async (req, res) => {
         data: { nome,
                 email,
                 senha, 
-                id_filial
+                id_filial: 1
         }
     })
 
     res.status(201).json(cadastro)
 })
 
+
+
+//LOGIN
+
+app.post("/login", async (req, res) => {
+  const { email, senha } = req.body;
+
+ const user = await prisma.gerente.findUnique({
+    where: {email: email}
+ })
+
+ if (!user){
+    return res.status(404).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
+ }
+
+  // Verificação das informações corretas ou erradas
+  if (email === user.email && 
+      senha === user.senha) 
+{
+    return res.json({ message: "Login realizado com sucesso, bem vindo Ronaldo Luiz!" });
+  } else {  
+    return res.status(401).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
+  }
+})
 
 
 app.listen(3000, () => {
