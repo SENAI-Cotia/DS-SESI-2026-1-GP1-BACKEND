@@ -14,13 +14,13 @@ datasource db {
 
 model Produto {
   id_produto    Int      @id @default(autoincrement())
-  preco         Float   
   nome          String
-  marca         String
+  preco         Float   
+  categoria     String
   descricao     String?
-  codigo_barras String   @unique
+  codigo_barra  String   @unique
 
-  estoques      Estoque[]
+  estoques     Estoque[]
   movimentacoes Movimentacao[]
 
   @@map("produtos")
