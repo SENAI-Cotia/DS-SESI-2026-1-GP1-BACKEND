@@ -133,8 +133,34 @@ app.post('/criar/produtos', async (req, res) => {
         return res.status(500).json({ mensagem: "Erro ao cadastrar produto" });
     }
 });
-//RETIRADA DE PROTUDO
 
+
+//RETIRADA DE PROTUDO
+app.delete('/produtos/dell', async (req, res) => {
+    try {
+        const { nome } = req.body;
+
+        // Verifica se o produto existe
+        const produto = await prisma.produto.findFirst({
+            where: { nome: nome }
+        });
+
+        if (!produto) {
+            return res.status(404).json({ mensagem: "Produto não encontrado, veja se escreveu corretamente" });
+        }
+
+        // Remove o produto
+        await prisma.produto.delete({
+            where: { id_produto: produto.id_produto }
+        });
+
+        return res.json({ mensagem: `Produto '${nome}' foi removido com sucesso!` });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ mensagem: "Erro ao remover produto" });
+    }
+});
 
 app.listen(3000, () => {
     console.log(`Server is running on port ${3000}`);
