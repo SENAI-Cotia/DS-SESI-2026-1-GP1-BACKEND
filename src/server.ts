@@ -26,23 +26,29 @@ app.get("/produtos", async (req, res) => {
 
 //CADASTRO DE PRODUTOS
 app.post("/cadastro/produtos", async (req, res) =>{
-    const { produto, categoria, estoque_atual, estoque_minimo} = req.body
+    const { nome, categoria, preco, descricao, codigo_barra, estoque} = req.body
 
-    if(!produto|| !categoria || !estoque_atual || !estoque_minimo){
-        res.status(400).json({error: " Todos os campos são obrigatórios"})
+    if(!nome|| !categoria || !preco || !codigo_barra){
+        return res.status(400).json({error: " Todos os campos são obrigatórios"})
     }
-
-    if(estoque_minimo.length < 100){
-        res.status(400).json({error:"É necessário que o estoque minimo desse produto seja maior ou igual a 100"})
-    }
-
+    
     const cadastroProduto = await prisma.produto.create({
-        data: { produto,
+        data: { nome,
                 categoria,
-                estoque_atual: Number(estoque_atual),
-                estoque_minimo : Number(estoque_minimo)
+                preco: Number(preco), 
+                descricao, 
+                codigo_barra:  String(codigo_barra)
         }
     })
+
+
+    await prisma.estoque.create({
+        data: {
+        id_produto: cadastroProduto.id_produto,
+        id_filial: 1,
+        quantidade: Number(estoque)
+    }
+})
 
     res.status(201).json(cadastroProduto)
 
@@ -51,10 +57,9 @@ app.post("/cadastro/produtos", async (req, res) =>{
 
 
 //CADASTRO DE GERENTES
-app.post("/gerentes", async (req, res) => {
-    const {nome, email, senha} = req.body
+app.post("/cadastro/gerentes", async (req, res) => {
+    const {nome, email, senha, id_filial} = req.body
 
-    
 
     if(!nome || !email || !senha){
         return res.status(400).json({error: "Todos os campos são obrigatórios!"})
