@@ -106,6 +106,41 @@ app.post("/login", async (req, res) => {
   }
 })
 
+//ADICIONAR NOVO PRODUTO
+app.post('/criar/produtos', async (req, res) => {
+    try {
+        const { codigo_barras, nome, marca, preco, descricao } = req.body;
+
+        // Validação simples: apenas os campos obrigatórios do schema
+        if (!codigo_barras || !nome || !marca || !preco) {
+            return res.status(400).json({
+                mensagem: "Campos obrigatórios: codigo_barras, nome, marca, preco"
+            });
+        }
+
+        // Cria o produto no banco via Prisma
+        const novoProduto = await prisma.produto.create({
+            data: {
+                codigo_barras,
+                nome,
+                marca,
+                preco: Number(preco), // garante que seja número
+                descricao             // opcional
+            }
+        });
+
+        return res.status(201).json({
+            mensagem: "Produto cadastrado com sucesso!",
+            produto: novoProduto
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ mensagem: "Erro ao cadastrar produto" });
+    }
+});
+//RETIRADA DE PROTUDO
+
 
 app.listen(3000, () => {
     console.log(`Server is running on port ${3000}`);
