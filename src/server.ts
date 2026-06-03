@@ -26,9 +26,9 @@ app.get("/produtos", async (req, res) => {
 
 //CADASTRO DE PRODUTOS
 app.post("/cadastro/produtos", async (req, res) =>{
-    const { nome, categoria, preco, descricao, codigo_barra, estoque} = req.body
+    const { nome, categoria, preco, descricao, codigo_barra, estoque, imagem} = req.body
 
-    if(!nome|| !categoria || !preco || !codigo_barra){
+    if(!nome|| !categoria || !preco || !codigo_barra || !imagem){
         return res.status(400).json({error: " Todos os campos são obrigatórios"})
     }
     
@@ -37,7 +37,8 @@ app.post("/cadastro/produtos", async (req, res) =>{
                 categoria,
                 preco: Number(preco), 
                 descricao, 
-                codigo_barra:  String(codigo_barra)
+                codigo_barra:  String(codigo_barra),
+                imagem
         }
     })
 

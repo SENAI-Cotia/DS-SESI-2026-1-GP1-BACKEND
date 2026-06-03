@@ -19,6 +19,7 @@ model Produto {
   categoria     String
   descricao     String?
   codigo_barra  String   @unique
+  imagem        String
 
   estoques     Estoque[]
   movimentacoes Movimentacao[]
