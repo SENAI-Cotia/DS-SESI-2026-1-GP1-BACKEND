@@ -1,10 +1,11 @@
 
 import express from "express";
 import prisma from "./lib/prisma";
+import cors from "cors"
 
 const app = express();
 
-
+app.use(cors())
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -14,42 +15,43 @@ app.get("/", (req, res) => {
 
 //LISTA TODOS OS PRODUTOS CADASTRADOS
 app.get("/produtos", async (req, res) => {
-    try{
+    try {
         const produtos = await prisma.produto.findMany()  //Para pegar o livro do banco de dados nos vamos utilizar o prisma! ele sera ponte do banco de dados para a API
-    res.json(produtos)
-    }catch (error){
-        res.status(500).json({error:"Ocorreu um erro ao listar os produtos"})
+        res.json(produtos)
+    } catch (error) {
+        res.status(500).json({ error: "Ocorreu um erro ao listar os produtos" })
     }
 
 })
 
 
 //CADASTRO DE PRODUTOS
-app.post("/cadastro/produtos", async (req, res) =>{
-    const { nome, categoria, preco, descricao, codigo_barra, estoque, imagem} = req.body
+app.post("/cadastro/produtos", async (req, res) => {
+    const { nome, categoria, preco, descricao, codigo_barra, estoque, imagem } = req.body
 
-    if(!nome|| !categoria || !preco || !codigo_barra || !imagem){
-        return res.status(400).json({error: " Todos os campos são obrigatórios"})
+    if (!nome || !categoria || !preco || !codigo_barra || !imagem) {
+        return res.status(400).json({ error: " Todos os campos são obrigatórios" })
     }
-    
+
     const cadastroProduto = await prisma.produto.create({
-        data: { nome,
-                categoria,
-                preco: Number(preco), 
-                descricao, 
-                codigo_barra:  String(codigo_barra),
-                imagem
+        data: {
+            nome,
+            categoria,
+            preco: Number(preco),
+            descricao,
+            codigo_barra: String(codigo_barra),
+            imagem
         }
     })
 
 
     await prisma.estoque.create({
         data: {
-        id_produto: cadastroProduto.id_produto,
-        id_filial: 1,
-        quantidade: Number(estoque)
-    }
-})
+            id_produto: cadastroProduto.id_produto,
+            id_filial: 1,
+            quantidade: Number(estoque)
+        }
+    })
 
     res.status(201).json(cadastroProduto)
 
@@ -59,22 +61,23 @@ app.post("/cadastro/produtos", async (req, res) =>{
 
 //CADASTRO DE GERENTES
 app.post("/cadastro/gerentes", async (req, res) => {
-    const {nome, email, senha, id_filial} = req.body
+    const { nome, email, senha, id_filial } = req.body
 
 
-    if(!nome || !email || !senha){
-        return res.status(400).json({error: "Todos os campos são obrigatórios!"})
+    if (!nome || !email || !senha) {
+        return res.status(400).json({ error: "Todos os campos são obrigatórios!" })
     }
 
-    if(senha.length <8){
-        return res.status(400).json({error: "A senha precisa ter no mínimo 8 caracteres"})
+    if (senha.length < 8) {
+        return res.status(400).json({ error: "A senha precisa ter no mínimo 8 caracteres" })
     }
 
     const cadastro = await prisma.gerente.create({
-        data: { nome,
-                email,
-                senha, 
-                id_filial: 1
+        data: {
+            nome,
+            email,
+            senha,
+            id_filial: 1
         }
     })
 
@@ -86,91 +89,25 @@ app.post("/cadastro/gerentes", async (req, res) => {
 //LOGIN
 
 app.post("/login", async (req, res) => {
-  const { email, senha } = req.body;
+    const { email, senha } = req.body;
 
- const user = await prisma.gerente.findUnique({
-    where: {email: email}
- })
+    const user = await prisma.gerente.findUnique({
+        where: { email: email }
+    })
 
- if (!user){
-    return res.status(404).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
- }
+    if (!user) {
+        return res.status(404).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
+    }
 
-  // Verificação das informações corretas ou erradas
-  if (email === user.email && 
-      senha === user.senha) 
-{
-    return res.json({ message: "Login realizado com sucesso, bem vindo Ronaldo Luiz!" });
-  } else {  
-    return res.status(401).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
-  }
-});
-
-
-
-
-
-// ADICIONAR PRODUTO
-app.post('/criar/produtos', async (req, res) => {
-    try {
-        const { codigo_barras, nome, marca, preco, descricao, quantidade } = req.body;
-
-        if (!codigo_barras || !nome || !marca || !preco || !quantidade) {//verifica se os campos obrigatórios estão presentes
-            return res.status(400).json({
-                mensagem: "Campos obrigatórios: codigo_barras, nome, marca, preco, quantidade"
-            });
-        }
-
-        // Cria o produto junto com o estoque inicial
-        const novoProduto = await prisma.produto.create({
-            data: {
-                codigo_barras,
-                nome,
-                marca,
-                preco: Number(preco),
-                descricao,
-                estoques: {
-                    create: {//feito dessa forma para criar o estoque junto com o produto,
-                    //  evitando a necessidade de criar o produto primeiro e depois o estoque
-                        quantidade: Number(quantidade),
-                        id_filial: 0 // valor fixo para não ser usado no momento
-                    }
-                }
-            },
-            include: { estoques: true }//confirmação
-        });
-
-        return res.status(201).json({//retorno para sucesso
-            mensagem: "Produto cadastrado com sucesso!",
-            produto: novoProduto
-        });
-
-    } catch (error: any) { // tipando como any para acessar code
-        console.error(error);
-
-        // Tratamento específico para erro de chave única
-        if (error.code === 'P2002') {
-            return res.status(400).json({ mensagem: "Já existe um produto com este código de barras" });
-        }
-
-        return res.status(500).json({ mensagem: "Erro ao cadastrar produto" });
+    // Verificação das informações corretas ou erradas
+    if (email === user.email &&
+        senha === user.senha) {
+        return res.json({ message: "Login realizado com sucesso, bem vindo Ronaldo Luiz!" });
+    } else {
+        return res.status(401).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
     }
 });
 
-
-// LISTAR ESTOQUES 
-//criado apenas para uma organização própria para analizar os endpoints feitos
-app.get('/estoques', async (req, res) => {
-    try {
-        const estoques = await prisma.estoque.findMany({
-            include: { produto: true }
-        });
-        return res.json(estoques);//retorna os estoques junto com as informações do produto relacionado
-    } catch (error: any) {//tipando como any para acessar code
-        console.error(error);
-        return res.status(500).json({ mensagem: "Erro ao listar estoques" });//retorno erro
-    }
-});
 
 // RETIRADA DE PRODUTO EM QUANTIDADE
 app.put('/produtos/retirada', async (req, res) => {
@@ -217,8 +154,8 @@ app.put('/produtos/retirada', async (req, res) => {
         });
 
         return res.json({ //retorno para sucesso
-            mensagem: `Retirada de ${quantidade} unidade(s) do produto '${nome}' realizada com sucesso!`, 
-            estoque: estoqueAtualizado 
+            mensagem: `Retirada de ${quantidade} unidade(s) do produto '${nome}' realizada com sucesso!`,
+            estoque: estoqueAtualizado
         });
 
     } catch (error: any) {
