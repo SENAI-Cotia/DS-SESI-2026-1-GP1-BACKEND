@@ -16,7 +16,11 @@ app.get("/", (req, res) => {
 //LISTA TODOS OS PRODUTOS CADASTRADOS
 app.get("/produtos", async (req, res) => {
     try {
-        const produtos = await prisma.produto.findMany()  //Para pegar o livro do banco de dados nos vamos utilizar o prisma! ele sera ponte do banco de dados para a API
+        const produtos = await prisma.produto.findMany({
+            include: {
+                estoques: true 
+            }
+        })
         res.json(produtos)
     } catch (error) {
         res.status(500).json({ error: "Ocorreu um erro ao listar os produtos" })
@@ -29,7 +33,7 @@ app.get("/produtos", async (req, res) => {
 app.post("/cadastro/produtos", async (req, res) => {
     const { nome, categoria, preco, descricao, codigo_barra, estoque, imagem } = req.body
 
-    if (!nome || !categoria || !preco || !codigo_barra || !imagem) {
+    if (!nome || !categoria || !preco || !codigo_barra || !imagem ||!estoque) {
         return res.status(400).json({ error: " Todos os campos são obrigatórios" })
     }
 
@@ -40,7 +44,8 @@ app.post("/cadastro/produtos", async (req, res) => {
             preco: Number(preco),
             descricao,
             codigo_barra: String(codigo_barra),
-            imagem
+            imagem 
+            
         }
     })
 
@@ -57,58 +62,20 @@ app.post("/cadastro/produtos", async (req, res) => {
 
 })
 
+//Retornar produto por id
+app.get("/produtos/:id", async (req, res) => {
+    const id = parseInt(req.params.id)
 
-
-//CADASTRO DE GERENTES
-app.post("/cadastro/gerentes", async (req, res) => {
-    const { nome, email, senha, id_filial } = req.body
-
-
-    if (!nome || !email || !senha) {
-        return res.status(400).json({ error: "Todos os campos são obrigatórios!" })
-    }
-
-    if (senha.length < 8) {
-        return res.status(400).json({ error: "A senha precisa ter no mínimo 8 caracteres" })
-    }
-
-    const cadastro = await prisma.gerente.create({
-        data: {
-            nome,
-            email,
-            senha,
-            id_filial: 1
-        }
+    const produto = await prisma.produto.findFirst({
+        where: { id_produto: id }
     })
 
-    res.status(201).json(cadastro)
-})
-
-
-
-//LOGIN
-
-app.post("/login", async (req, res) => {
-    const { email, senha } = req.body;
-
-    const user = await prisma.gerente.findUnique({
-        where: { email: email }
-    })
-
-    if (!user) {
-        return res.status(404).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
-    }
-
-    // Verificação das informações corretas ou erradas
-    if (email === user.email &&
-        senha === user.senha) {
-        return res.json({ message: "Login realizado com sucesso, bem vindo Ronaldo Luiz!" });
+    if(produto){
+        return res.json(produto)
     } else {
-        return res.status(401).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
+        res.status(404).json("Produto não encontrado!")
     }
-});
-
-
+})
 // RETIRADA DE PRODUTO EM QUANTIDADE
 app.put('/produtos/retirada', async (req, res) => {
     try {
@@ -163,6 +130,117 @@ app.put('/produtos/retirada', async (req, res) => {
         return res.status(500).json({ mensagem: "Erro ao retirar produto" });
     }
 });
+
+
+
+
+
+//CADASTRO DE GERENTES
+app.post("/cadastro/gerentes", async (req, res) => {
+    try {
+        const { nome, email, senha, id_filial, imagem } = req.body
+
+        if (!nome || !email || !senha || !imagem || !id_filial) {
+            return res.status(400).json({ error: "Todos os campos são obrigatórios!" })
+        }
+
+        if (senha.length < 8) {
+            return res.status(400).json({ error: "A senha precisa ter no mínimo 8 caracteres" })
+        }
+
+        const cadastro = await prisma.gerente.create({
+            data: {
+                nome,
+                email,
+                senha,
+                imagem,
+                id_filial: Number(id_filial) // garante que é número
+            }
+        })
+
+        res.status(201).json(cadastro)
+
+    } catch (error) {
+        console.log(error) // mostra o erro exato no terminal
+        res.status(500).json({ error: String(error) })
+    }
+})
+
+
+//LOGIN
+app.post("/login", async (req, res) => {
+    const { email, senha } = req.body;
+
+    const user = await prisma.gerente.findUnique({
+        where: { email: email }
+    })
+
+    if (!user) {
+        return res.status(404).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
+    }
+
+    // Verificação das informações corretas ou erradas
+    if (email === user.email &&
+        senha === user.senha) {
+        return res.json({ message: "Login realizado com sucesso, bem vindo Ronaldo Luiz!" });
+    } else {
+        return res.status(401).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
+    }
+});
+
+
+//LISTAR TODOS OS GERENTES
+app.get("/gerentes", async (req, res) => {
+    try {
+        const gerentes = await prisma.gerente.findMany()
+        res.json(gerentes)
+    } catch (error) {
+        res.status(500).json({ error: "Ocorreu um erro ao listar os produtos" })
+    }
+
+})
+
+//BUSCAR GERENTE POR id
+app.put("/gerente/:id", async (req, res) => {
+    const id = parseInt(req.params.id)
+    const { nome, email, senha } = req.body
+
+    if(!nome || !email || !senha){
+        return res.status(400).json("Nome e Email são obrigatórios")
+    }
+
+    const gerente = await prisma.gerente.update({
+        where: { id_usuario: id },
+        data: { nome, email, senha }
+    })
+
+    return res.json(gerente)
+})
+
+//deletar gerente 
+app.delete("/gerente/:id", async (req, res) => {
+    try {
+        const id = parseInt(req.params.id)
+
+        const gerente = await prisma.gerente.findFirst({
+            where: { id_usuario: id }
+        })
+
+        if(!gerente){
+            return res.status(404).json({ error: "Gerente não encontrado!" })
+        }
+
+        await prisma.gerente.delete({
+            where: { id_usuario: id }
+        })
+
+        res.json({ message: "Gerente deletado com sucesso!" })
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ error: "Erro ao deletar gerente" })
+    }
+})
 
 
 app.listen(3000, () => {

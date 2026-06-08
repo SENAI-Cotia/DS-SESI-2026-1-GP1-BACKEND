@@ -75,6 +75,7 @@ model Gerente {
   email      String @unique
   senha      String
   nome       String
+  imagem     String
 
   movimentacoes Movimentacao[]
 
