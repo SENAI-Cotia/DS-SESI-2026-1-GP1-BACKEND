@@ -188,6 +188,59 @@ app.post("/login", async (req, res) => {
     return res.status(401).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
   }
 })
+//LISTAR TODOS OS GERENTES
+app.get("/gerentes", async (req, res) => {
+    try {
+        const gerentes = await prisma.gerente.findMany()
+        res.json(gerentes)
+    } catch (error) {
+        res.status(500).json({ error: "Ocorreu um erro ao listar os produtos" })
+    }
+
+})
+
+//BUSCAR GERENTE POR id
+app.put("/gerente/:id", async (req, res) => {
+    const id = parseInt(req.params.id)
+    const { nome, email, senha } = req.body
+
+    if(!nome || !email || !senha){
+        return res.status(400).json("Nome e Email são obrigatórios")
+    }
+
+    const gerente = await prisma.gerente.update({
+        where: { id_usuario: id },
+        data: { nome, email, senha }
+    })
+
+    return res.json(gerente)
+})
+
+//deletar gerente 
+app.delete("/gerente/:id", async (req, res) => {
+    try {
+        const id = parseInt(req.params.id)
+
+        const gerente = await prisma.gerente.findFirst({
+            where: { id_usuario: id }
+        })
+
+        if(!gerente){
+            return res.status(404).json({ error: "Gerente não encontrado!" })
+        }
+
+        await prisma.gerente.delete({
+            where: { id_usuario: id }
+        })
+
+        res.json({ message: "Gerente deletado com sucesso!" })
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ error: "Erro ao deletar gerente" })
+    }
+})
+
 
 
 app.listen(3000, () => {
