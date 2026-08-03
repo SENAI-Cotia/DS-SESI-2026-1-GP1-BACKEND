@@ -76,6 +76,7 @@ model Gerente {
   senha      String
   nome       String
   imagem     String
+  role       String
 
   movimentacoes Movimentacao[]
 
