@@ -1,7 +1,11 @@
 
-import express from "express";
-import prisma from "./lib/prisma";
+import express from "express"
 import cors from "cors"
+import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken"
+
+import { authenticate, requireAdmin } from "./middlewares/auth"
+import prisma from "../lib/prisma";
 
 const app = express();
 
@@ -30,7 +34,7 @@ app.get("/produtos", async (req, res) => {
 
 
 //CADASTRO DE PRODUTOS
-app.post("/cadastro/produtos", async (req, res) => {
+app.post("/cadastro/produtos", authenticate, async (req, res) => {
     const { nome, categoria, preco, descricao, codigo_barra, estoque, imagem } = req.body
 
     if (!nome || !categoria || !preco || !codigo_barra || !imagem ||!estoque) {
@@ -76,8 +80,10 @@ app.get("/produtos/:id", async (req, res) => {
         res.status(404).json("Produto não encontrado!")
     }
 })
+
+
 // RETIRADA DE PRODUTO EM QUANTIDADE
-app.put('/produtos/retirada', async (req, res) => {
+app.put('/produtos/retirada',  authenticate, async (req, res) => {
     try {
         const { nome, quantidade } = req.body;
 
@@ -85,7 +91,8 @@ app.put('/produtos/retirada', async (req, res) => {
             return res.status(400).json({ mensagem: "Informe uma quantidade válida para retirada" });
         }
 
-        const produto = await prisma.produto.findFirst({//forma de busca
+        const produto = await prisma.produto.findFirst({
+            //forma de busca
             where: { nome }
         });
 
@@ -138,9 +145,9 @@ app.put('/produtos/retirada', async (req, res) => {
 //CADASTRO DE GERENTES
 app.post("/cadastro/gerentes", async (req, res) => {
     try {
-        const { nome, email, senha, id_filial, imagem } = req.body
+        const { nome, email, senha, id_filial, imagem, role } = req.body
 
-        if (!nome || !email || !senha || !imagem || !id_filial) {
+        if (!nome || !email || !senha || !imagem || !id_filial|| !role) {
             return res.status(400).json({ error: "Todos os campos são obrigatórios!" })
         }
 
@@ -148,12 +155,15 @@ app.post("/cadastro/gerentes", async (req, res) => {
             return res.status(400).json({ error: "A senha precisa ter no mínimo 8 caracteres" })
         }
 
+        const senhaCriptografada = await bcrypt.hash(senha, 10)
+
         const cadastro = await prisma.gerente.create({
             data: {
                 nome,
                 email,
-                senha,
+                senha: senhaCriptografada,
                 imagem,
+                role,
                 id_filial: Number(id_filial) // garante que é número
             }
         })
@@ -167,27 +177,60 @@ app.post("/cadastro/gerentes", async (req, res) => {
 })
 
 
-//LOGIN
+// //LOGIN
+// app.post("/login", async (req, res) => {
+//     const { email, senha } = req.body;
+
+//     const user = await prisma.gerente.findUnique({
+//         where: { email: email }
+//     })
+
+//     if (!user) {
+//         return res.status(404).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
+//     }
+
+//   // Verificação das informações corretas ou erradas
+//   if (email === user.email )
+// {
+//     return res.json({ message: "Login realizado com sucesso, bem vindo!" });
+//   } else {  
+//     return res.status(401).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
+//   }
+// })
+
+
 app.post("/login", async (req, res) => {
     const { email, senha } = req.body;
 
+    // 1. Busca o usuário pelo e-mail
     const user = await prisma.gerente.findUnique({
         where: { email: email }
-    })
+    });
 
     if (!user) {
         return res.status(404).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
     }
 
-  // Verificação das informações corretas ou erradas
-  if (email === user.email && 
-      senha === user.senha) 
-{
-    return res.json({ message: "Login realizado com sucesso, bem vindo Ronaldo Luiz!" });
-  } else {  
-    return res.status(401).json({ error: "E-mail ou senha incorretos, tente outra hora ou depois" });
-  }
-})
+
+    // 3. Gerar o Token JWT (Defina uma chave secreta segura no seu .env)
+    const SECRET_KEY = process.env.JWT_SECRET || "sesisenai";
+    
+    const token = jwt.sign(
+        { id: user.id_usuario, email: user.email, nome: user.nome, role: user.role, senha:user.senha, imagem: user.imagem}, // Payload que vai dentro do token
+        SECRET_KEY,
+        
+    );
+
+    // 4. Retornar o token para o front-end
+    return res.json({ 
+        message: "Login realizado com sucesso, bem vindo!",
+        token:token
+    });
+});
+
+
+
+
 //LISTAR TODOS OS GERENTES
 app.get("/gerentes", async (req, res) => {
     try {
