@@ -22,7 +22,7 @@ app.get("/produtos", async (req, res) => {
     try {
         const produtos = await prisma.produto.findMany({
             include: {
-                estoques: true 
+                estoques: true
             }
         })
         res.json(produtos)
@@ -37,7 +37,7 @@ app.get("/produtos", async (req, res) => {
 app.post("/cadastro/produtos", authenticate, async (req, res) => {
     const { nome, categoria, preco, descricao, codigo_barra, estoque, imagem } = req.body
 
-    if (!nome || !categoria || !preco || !codigo_barra || !imagem ||!estoque) {
+    if (!nome || !categoria || !preco || !codigo_barra || !imagem || !estoque) {
         return res.status(400).json({ error: " Todos os campos são obrigatórios" })
     }
 
@@ -48,8 +48,8 @@ app.post("/cadastro/produtos", authenticate, async (req, res) => {
             preco: Number(preco),
             descricao,
             codigo_barra: String(codigo_barra),
-            imagem 
-            
+            imagem
+
         }
     })
 
@@ -74,7 +74,7 @@ app.get("/produtos/:id", async (req, res) => {
         where: { id_produto: id }
     })
 
-    if(produto){
+    if (produto) {
         return res.json(produto)
     } else {
         res.status(404).json("Produto não encontrado!")
@@ -83,7 +83,7 @@ app.get("/produtos/:id", async (req, res) => {
 
 
 // RETIRADA DE PRODUTO EM QUANTIDADE
-app.put('/produtos/retirada',  authenticate, async (req, res) => {
+app.put('/produtos/retirada', authenticate, async (req, res) => {
     try {
         const { nome, quantidade } = req.body;
 
@@ -147,7 +147,7 @@ app.post("/cadastro/gerentes", async (req, res) => {
     try {
         const { nome, email, senha, id_filial, imagem, role } = req.body
 
-        if (!nome || !email || !senha || !imagem || !id_filial|| !role) {
+        if (!nome || !email || !senha || !imagem || !id_filial || !role) {
             return res.status(400).json({ error: "Todos os campos são obrigatórios!" })
         }
 
@@ -214,17 +214,17 @@ app.post("/login", async (req, res) => {
 
     // 3. Gerar o Token JWT (Defina uma chave secreta segura no seu .env)
     const SECRET_KEY = process.env.JWT_SECRET || "sesisenai";
-    
+
     const token = jwt.sign(
-        { id: user.id_usuario, email: user.email, nome: user.nome, role: user.role, senha:user.senha, imagem: user.imagem}, // Payload que vai dentro do token
+        { id: user.id_usuario, email: user.email, nome: user.nome, role: user.role, senha: user.senha, imagem: user.imagem }, // Payload que vai dentro do token
         SECRET_KEY,
-        
+
     );
 
     // 4. Retornar o token para o front-end
-    return res.json({ 
+    return res.json({
         message: "Login realizado com sucesso, bem vindo!",
-        token:token
+        token: token
     });
 });
 
@@ -247,7 +247,7 @@ app.put("/gerente/:id", async (req, res) => {
     const id = parseInt(req.params.id)
     const { nome, email, senha } = req.body
 
-    if(!nome || !email || !senha){
+    if (!nome || !email || !senha) {
         return res.status(400).json("Nome e Email são obrigatórios")
     }
 
@@ -268,7 +268,7 @@ app.delete("/gerente/:id", async (req, res) => {
             where: { id_usuario: id }
         })
 
-        if(!gerente){
+        if (!gerente) {
             return res.status(404).json({ error: "Gerente não encontrado!" })
         }
 
@@ -281,6 +281,40 @@ app.delete("/gerente/:id", async (req, res) => {
     } catch (error) {
         console.log(error)
         res.status(500).json({ error: "Erro ao deletar gerente" })
+    }
+})
+
+app.delete("/produtos/:id", async (req, res) => {
+    try {
+        const id = parseInt(req.params.id)
+
+        const produto = await prisma.produto.findFirst({
+            where: { id_produto: id }
+        })
+
+        if (!produto) {
+            return res.status(404).json({ error: "produto não encontrado!" })
+        }
+
+        await prisma.movimentacao.deleteMany({
+            where: { id_produto: id } // Ajuste o nome do campo se for diferente no seu schema
+        });
+
+        // 2. Deletar os estoques vinculados ao produto
+        await prisma.estoque.deleteMany({
+            where: { id_produto: id } // Ajuste o nome do campo se for diferente no seu schema
+        });
+
+        // 3. Agora sim, deletar o produto
+        await prisma.produto.delete({
+            where: { id_produto: id }
+        });
+
+        res.json({ message: "produto deletado com sucesso!" })
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ error: "Erro ao deletar produto" })
     }
 })
 
